@@ -21,6 +21,6 @@ EXPOSE 8080
 
 # For Render/Heroku-style platforms, $PORT is provided at runtime.
 # Use dev server (hot reload off in containers) or switch to `run` if you prefer.
-CMD ["bash","-lc","uv run fastmcp dev server.py --ui-port ${PORT:-8080}"]
+CMD ["bash","-lc","uv run fastmcp run server.py --host 0.0.0.0 --port ${PORT:-8080}"]
 # Alternative:
 # CMD ["bash","-lc","uv run fastmcp run server.py --host 0.0.0.0 --port ${PORT:-8080}"]
