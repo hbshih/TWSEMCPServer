@@ -1,23 +1,26 @@
 FROM python:3.13-slim
 
-# Install Node 20
-RUN apt-get update && apt-get install -y curl ca-certificates gnupg \
-  && mkdir -p /etc/apt/keyrings \
-  && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-  && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
-  && apt-get update && apt-get install -y nodejs && rm -rf /var/lib/apt/lists/*
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_PYTHON_VERSION_WARNING=1
 
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && ln -s /root/.local/bin/uv /usr/local/bin/uv
+# Optional: system deps
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install uv (Python package manager/runner)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+  && ln -s /root/.local/bin/uv /usr/local/bin/uv
 
 WORKDIR /app
 COPY . /app
 
-# Python deps
-RUN uv sync
-
-# MCP HTTP bridge
-RUN npm i -g @modelcontextprotocol/bridge@latest
+# Install Python deps declared by the project
+RUN uv sync --frozen
 
 EXPOSE 8080
-CMD ["bash","-lc","npx -y @modelcontextprotocol/bridge serve --command 'uv run fastmcp run server.py' --port ${PORT:-8080} --verbose"]
+
+# For Render/Heroku-style platforms, $PORT is provided at runtime.
+# Use dev server (hot reload off in containers) or switch to `run` if you prefer.
+CMD ["bash","-lc","uv run fastmcp dev server.py --host 0.0.0.0 --port ${PORT:-8080}"]
+# Alternative:
+# CMD ["bash","-lc","uv run fastmcp run server.py --host 0.0.0.0 --port ${PORT:-8080}"]
